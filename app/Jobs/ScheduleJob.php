@@ -3,9 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Schedule;
-use Exception;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -16,12 +14,12 @@ class ScheduleJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private $data;
+    private array $data;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->data = $data;
     }
@@ -29,15 +27,20 @@ class ScheduleJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle($data): void
+    public function handle(Schedule $schedule): void
     {
-        Log::info('Disparando job.');
-        // try {
-        //     $schedule = new Schedule();
-        //     Log::info('Agendando passeio.');
-        //     $schedule->create($data);
-        // } catch (Exception $e) {
-        //     Log::error('Erro ao adicionar registro ao banco de dados: ' . $e->getMessage());
-        // }
+        try {
+            Log::info('Inside handle method');
+            Log::info($this->data);
+
+            if (!$schedule) {
+                Log::info('RecipeRepository is null');
+            }
+
+            $schedule->create($this->data);
+            Log::info('Creating new schedule with queue');
+        } catch (\Exception $e) {
+            Log::info("Unable to dispatch the queue. Reason: " . $e->getMessage());
+        }
     }
 }
