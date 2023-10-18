@@ -22,6 +22,14 @@ class Pet extends Model
             ->first();
     }
 
+    public function scopeGetByUserId($query, $userId)
+    {
+        return $query
+            ->select("id", "name", 'breed', 'age', 'size')
+            ->where('user_id', '=', $userId)
+            ->get();
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

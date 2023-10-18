@@ -9,11 +9,13 @@ use App\Models\Pet;
 use App\Models\Profile;
 use App\Models\Schedule;
 use App\Models\User;
+use App\Traits\AuthenticatedUserIdTrait;
 use App\Traits\UserDataTrait;
 
 class PetOwnerService
 {
     use UserDataTrait;
+    use AuthenticatedUserIdTrait;
 
     private $pet;
     private $profile;
@@ -56,10 +58,7 @@ class PetOwnerService
 
         dispatch(new ScheduleJob($data));
 
-        // $this->schedule->create($data);
-
         return 'The scheduling request was made. We will send you an email to confirm the appointment schedule';
-        // return $data;
     }
 
     public function registerPet($data)
@@ -74,6 +73,13 @@ class PetOwnerService
         $this->validatePet($pet);
 
         return 'Pet successfully registered';
+    }
+
+    public function getPets()
+    {
+        $userId = $this->getUserId();
+        $pets = $this->pet->getByUserId($userId);
+        return $pets;
     }
 
     public function updateWalkerStatus()
