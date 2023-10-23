@@ -13,6 +13,14 @@ class Schedule extends Model
 
     protected $fillable = ['owner_id', 'walker_id', 'date', 'pet_id', 'start_time', 'end_time', 'status'];
 
+    public function scopeGetByOwnerId($query, $id)
+    {
+        return $query
+            ->select('id', 'owner_id', 'walker_id', 'date', 'pet_id', 'start_time', 'status')
+            ->where('owner_id','=',$id)
+            ->get();
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

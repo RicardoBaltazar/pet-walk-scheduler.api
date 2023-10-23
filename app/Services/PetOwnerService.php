@@ -38,7 +38,22 @@ class PetOwnerService
         $this->schedule = $schedule;
     }
 
-    public function scheduleWalkWithWalker(array $data)
+    /**
+     * @return mixed
+     */
+    public function getUserSchedules()
+    {
+        $authenticatedUserId = $this->getUserId();
+        $schedules = $this->schedule->getByOwnerId($authenticatedUserId);
+
+        if ($schedules->isEmpty()) {
+            return "No schedules found.";
+        }
+
+        return $schedules;
+    }
+
+    public function scheduleWalkWithWalker(array $data): string
     {
         $data = $this->getUserDataAutenticated($data);
         $this->validateIsOwner($data['user_id']);
