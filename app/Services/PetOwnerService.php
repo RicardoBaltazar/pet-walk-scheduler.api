@@ -11,6 +11,8 @@ use App\Models\Schedule;
 use App\Models\User;
 use App\Traits\AuthenticatedUserIdTrait;
 use App\Traits\UserDataTrait;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class PetOwnerService
 {
@@ -44,10 +46,21 @@ class PetOwnerService
     public function getUserSchedules()
     {
         $authenticatedUserId = $this->getUserId();
-        $schedules = $this->schedule->getByOwnerId($authenticatedUserId);
+        $cacheKey = 'schedules-' . $authenticatedUserId;
+        $schedules = Cache::get($cacheKey);
 
-        if ($schedules->isEmpty()) {
-            return "No schedules found.";
+        if ($schedules === null) {
+            Log::info('Cache expired or does not exist');
+            $schedules = $this->schedule->getByUserId($authenticatedUserId);
+
+            if ($schedules->isEmpty()) {
+                return ["No schedules found."];
+            }
+
+            Cache::put($cacheKey, $schedules, 1440);
+            Log::info('Updated cache');
+        } else {
+            Log::info('Schedules found in the cache');
         }
 
         return $schedules;
@@ -97,11 +110,18 @@ class PetOwnerService
         return $pets;
     }
 
-    public function updateWalkerStatus()
+    public function updateWalkerStatus($data)
     {
-        // atualizar status do pásseio
+        $authenticatedUserId = $this->getUserId();
+        Cache::forget('schedules-' . $authenticatedUserId);
 
-        //só o donos agendados pode realizar a alteração do status
+        $schedule = $this->schedule->updateById($data);
+
+        if ($schedule) {
+            return 'scheduling status updated successfully';
+        } else {
+            return 'scheduling update failed';
+        }
     }
 
     private function validatePet(object $data): void

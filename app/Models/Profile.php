@@ -18,7 +18,14 @@ class Profile extends Model
         return $query
             ->select()
             ->where('user_id', '=', $userId)
-            ->first();
+            ->get();
+    }
+
+    public function scopeUpdateByUserId($query, $id, $data)
+    {
+        return $query
+            ->where('user_id', $id)
+            ->update($data);
     }
 
     public function user()

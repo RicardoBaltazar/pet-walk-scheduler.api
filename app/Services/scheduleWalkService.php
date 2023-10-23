@@ -4,11 +4,16 @@ namespace App\Services;
 
 use App\Models\AvailableDates;
 use App\Models\User;
+use App\Traits\AuthenticatedUserIdTrait;
 use App\Traits\FormatDateTimeTrait;
+use App\Traits\UserDataTrait;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class scheduleWalkService
 {
+    use AuthenticatedUserIdTrait;
     use FormatDateTimeTrait;
 
     private $availableDates;
@@ -23,28 +28,42 @@ class scheduleWalkService
         $this->user = $user;
     }
 
-    public function getAvailableSlots() : array
+    /**
+     *
+     * @return mixed
+     */
+    public function getAvailableSlots()
     {
-        $datas = $this->availableDates->all();
+        $authenticatedUserId = $this->getUserId();
 
-        foreach ($datas as &$item) {
-            $user = $this->user->findOrFail($item->user_id);
-            $item['user_name'] = $user->name;
-            $item['user_email'] = $user->email;
+        $cacheKey = 'walker-avaliable-' . $authenticatedUserId;
+        $avaliable = Cache::get($cacheKey);
+
+        if ($avaliable === null) {
+            Log::info('Cache expired or does not exist');
+            $datas = $this->availableDates->all();
+
+            foreach ($datas as &$item) {
+                $user = $this->user->findOrFail($item->user_id);
+                $item['user_name'] = $user->name;
+                $item['user_email'] = $user->email;
+            }
+
+            foreach ($datas as &$item) {
+                $item["date"] = $this->formatDateTime($item["date"], 'd/m/Y');
+                $item["start_time"] = $this->formatDateTime($item["start_time"], 'H:i');
+                $item["end_time"] = $this->formatDateTime($item["end_time"], 'H:i');
+            }
+
+            Cache::put($cacheKey, $datas, 1440);
+            Log::info('Updated cache');
+
+            return $this->formatResponse($datas);
+        } else {
+            Log::info('available found in the cache');
         }
 
-        foreach ($datas as &$item) {
-            $item["date"] = $this->formatDateTime($item["date"], 'd/m/Y');
-            $item["start_time"] = $this->formatDateTime($item["start_time"], 'H:i');
-            $item["end_time"] = $this->formatDateTime($item["end_time"], 'H:i');
-        }
-
-        return $this->formatResponse($datas);
-    }
-
-    public function scheduleWalk($owner, $date, $startTime)
-    {
-        return 'scheduleWalk';
+        return $avaliable;
     }
 
     private function formatResponse(Collection $data): array

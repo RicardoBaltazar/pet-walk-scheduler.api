@@ -6,6 +6,7 @@ use App\Exceptions\CustomException;
 use App\Models\AvailableDates;
 use App\Models\Profile;
 use App\Traits\AuthenticatedUserIdTrait;
+use Illuminate\Support\Facades\Cache;
 
 class PetWalkerService
 {
@@ -24,10 +25,13 @@ class PetWalkerService
 
     public function setAvailableSlot(array $data): string
     {
+        $authenticatedUserId = $this->getUserId();
+        Cache::forget('walker-avaliable-'.$authenticatedUserId);
+
         $userId = $this->getUserId();
         $userProfile = $this->profile->getByUserId($userId);
 
-        if($userProfile->walker == false){
+        if($userProfile->first()->walker == false){
             throw new CustomException('Only pet walkers can register an available time slot. You can change your status to walker if you wish');
         }
 
@@ -36,12 +40,5 @@ class PetWalkerService
         $this->availableDates->create($data);
 
         return 'registered availability';
-    }
-
-    public function updateWalkerStatus() //Como este método se repete para donos e passeadores, pode ser criado uma classe única. Precisa ser classe pois possuirá atributos
-    {
-        // atualizar status do pásseio
-
-        //só o passeador agendado pode realizar a alteração do status
     }
 }
