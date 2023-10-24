@@ -49,9 +49,19 @@ class PetOwnerService
         $cacheKey = 'schedules-' . $authenticatedUserId;
         $schedules = Cache::get($cacheKey);
 
+        Cache::forget('schedules-' . $authenticatedUserId);
+
         if ($schedules === null) {
             Log::info('Cache expired or does not exist');
             $schedules = $this->schedule->getByUserId($authenticatedUserId);
+
+            foreach ($schedules as $key => $schedule) {
+                $pet = $this->pet->find($schedule->pet_id);
+                $owner = $this->user->find($schedule->owner_id);
+
+                $schedules[$key]['pet_name'] = $pet['name'];
+                $schedules[$key]['owner_name'] = $owner->name;
+            }
 
             if ($schedules->isEmpty()) {
                 return ["No schedules found."];
